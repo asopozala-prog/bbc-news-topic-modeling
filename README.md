@@ -55,3 +55,14 @@ It summarized densities as:
 The qualitative story from Gemini aligns well with the **quantitative topic counts** from my model:  
 Ukraine starts as the central conflict, then gradually becomes secondary as Gaza coverage spikes in 2023 and stays very high in 2024.
 More detailed explanation and Gemini output: [Full notes in Google Docs](https://docs.google.com/document/d/1q0JARoXUdl8eeSeM3yjWUCXOn-aK5Fi2TfxHmPcQt7I/edit?usp=sharing).
+### Special-topic detector (NMF + Decision Tree)
+
+Notebook: `bbc_special_topic_detector_nmf_decisiontree.ipynb`
+
+- Start from the raw **BBC RSS dataset (2022–2024)** and build TF‑IDF features on `title + description`.
+- Fit an **NMF model with 17 components**, then compute topic-level statistics (strong single dominance, use in 2‑ and 3‑topic mixtures, year concentration).
+- Combine these into a `special_score` and **automatically pick the most “special” topic** (no manual label; this turns out to be the Russia–Ukraine war topic).
+- Define an article label `is_special` = True when the article is **strongly dominated** by that auto‑chosen topic.
+- Train a **DecisionTreeClassifier** on the 17 topic‑proportion features to reproduce `is_special`; on a held‑out set it achieves almost perfect accuracy and very high precision/recall for the special class.
+- Wrap the full pipeline into `predict_is_special(text)`, which runs  
+  `raw text → TF‑IDF → NMF topics → topic proportions → decision tree` and returns a True/False prediction plus probability.
