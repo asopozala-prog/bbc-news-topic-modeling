@@ -54,3 +54,4 @@ It summarized densities as:
 
 The qualitative story from Gemini aligns well with the **quantitative topic counts** from my model:  
 Ukraine starts as the central conflict, then gradually becomes secondary as Gaza coverage spikes in 2023 and stays very high in 2024.
+More detailed explanation and Gemini output: [Full notes in Google Docs](https://docs.google.com/document/d/1q0JARoXUdl8eeSeM3yjWUCXOn-aK5Fi2TfxHmPcQt7I/edit?usp=sharing).
