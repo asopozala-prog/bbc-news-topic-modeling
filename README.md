@@ -28,3 +28,29 @@ This example taught me that:
 - Topic models do not produce a single “true” label; they produce **mixtures of themes**.  
 - A “misassignment” often reveals an article that genuinely sits between two human categories.  
 - Checking **one article at a time**, with its text and topic weights, is a good way to study the alignment (or tension) between **machine perception** and **human perception** of topics.
+## Shifting attention: Ukraine vs. Gaza (2022–2024)
+
+Using NMF topics on BBC RSS, I focused on two conflict‑related topics:
+
+- **Topic 2 – Russia–Ukraine war**
+- **Topic 6 – Israel–Gaza war**
+
+From the notebook counts:
+
+| Year | Ukraine (topic 2) | Gaza (topic 6) |
+|------|-------------------|----------------|
+| 2022 | 1189              | 121            |
+| 2023 |  686              | 819            |
+| 2024 |  491              | 518            |
+
+This shows a **clear shift**: Ukraine dominates in 2022, Gaza “catches up and overtakes” in 2023, and by 2024 both conflicts are covered but Gaza remains the primary focus.
+
+I then asked Gemini (with web access) to analyze BBC / UK media attention across these years.  
+It summarized densities as:
+
+- **2022:** Ukraine = *Extreme (Primary)*, Gaza = *Low*  
+- **2023:** Ukraine = *High (Steady)*, Gaza = *Extreme (Post‑Oct)*  
+- **2024:** Ukraine = *Moderate (Secondary)*, Gaza = *Extreme (Primary)*  
+
+The qualitative story from Gemini aligns well with the **quantitative topic counts** from my model:  
+Ukraine starts as the central conflict, then gradually becomes secondary as Gaza coverage spikes in 2023 and stays very high in 2024.
