@@ -1,68 +1,40 @@
-# bbc-news-topic-modeling
-Topic modeling BBC News RSS with TF-IDF + NMF (Kaggle notebook)
-### Summary – BBC News Topic Modeling (NMF)
 
-- Loaded ~42k BBC RSS articles (2013–2024) and built TF‑IDF features from title + description.  
-- Trained a 10‑topic NMF model and interpreted topics as Ukraine war, Israel–Gaza war, UK politics, cost of living, crime, sports, quizzes, etc.  
-- Assigned each article a dominant topic, then analyzed topic distributions overall and by year (2022–2024).  
-- Found that Ukraine‑war coverage declines over time while Israel–Gaza coverage spikes in 2023 and remains high in 2024.  
-- Compared these patterns with external information (via Gemini) and saw good alignment between model‑derived topics and real‑world news shifts.
-## Checking machine–human alignment
 
-One key learning in this project was **how to compare the model’s topic assignments with human intuition**.
+1. **BBC News Topic Modeling (NMF) – _first notebook_**  
+   - **Data:** Raw BBC RSS dataset (titles + descriptions, 2013–2024, focused on 2022–2024).  
+   - **Methods:** TF‑IDF → NMF (~10 topics), inspection of top words, topic assignment per article, topic counts and proportions by year (2022/2023/2024).  
+   - **Key findings:** Clear topics for Ukraine war, Israel–Gaza war, cost of living, UK politics, quizzes, sports etc.; saw Ukraine coverage shrink while Gaza coverage surged in 2023–24, and compared this with Gemini’s external analysis.  
+   - **Outputs:** Kaggle notebook + GitHub repo with a README summarizing the topic model and the shifting attention between conflicts.
 
-For each article, NMF produces a vector of topic weights (how much each topic contributes).  
-For example, for the article titled:
+2. **BBC Sentiment Classifier – _second notebook_**  
+   - **Data:** Same BBC RSS data; built `sentiment` labels with VADER (NLTK).  
+   - **Methods:** Turned VADER `compound` into labels (negative/neutral/positive), tightened thresholds (±0.6) to keep only strong positives/negatives, trained a `TfidfVectorizer + LogisticRegression` classifier.  
+   - **Key findings:** Classifier reached ~95% accuracy on clear cases; we saw that VADER’s simple word-based sentiment sometimes disagrees with human/Gemini judgments on complex news; learned about label noise and threshold design.  
+   - **Outputs:** Notebook and a short README section explaining the sentiment pipeline and its limitations.
 
-> **"Ukraine war: PM to hold talks with world leaders"**
+3. **BBC Topic‑Feature Dataset Builder (NMF → clean CSV) – _third notebook_**  
+   - **Data:** BBC RSS 2022–2024.  
+   - **Methods:** NMF with 17 topics; computed topic weights, normalized to proportions; added dominance metrics: `max_topic_prop`, `dominant_topic`, `strongly_dominant`, `n_topics_prop_over_0_1`, `n_topics_to_cover_0_7`; filtered to “well‑aligned” articles (max ≥ 0.3); exported a clean feature table.  
+   - **Key findings:** Many articles are clearly single‑topic; others need 2–3 topics to explain 70% of their content; we designed a careful dataset schema and a “topic dictionary” for all 17 topics.  
+   - **Outputs:** New public Kaggle dataset **“BBC topic‑feature dataset”** (+ MIT license) and documentation in both Kaggle description and GitHub README.
 
-the model produced (simplified):
+4. **EDA on Topic Relations – isolated vs relational topics – _fourth notebook (on the new dataset)_**  
+   - **Data:** `bbc_topics_features_clean.csv` (topic‑feature dataset).  
+   - **Methods:** Analyzed strongly dominant articles by year and topic; counted most frequent 2‑topic pairs (`n_topics_to_cover_0_7 == 2`) and 3‑topic triples; built a per‑topic table: `single_strong_count`, `in_pairs_count`, `in_triples_count`, `pairs_plus_triples`; scatter plot of “strong alone vs in combinations”; heatmaps and bar charts.  
+   - **Key findings:** Some topics (e.g. Ukraine war) are strong and relatively isolated; others (sports, politics, cost of living) appear frequently in mixed stories; we started thinking about “special topics” based on these statistics rather than names.  
 
-- Topic 2 (Ukraine war): weight ≈ 0.051  
-- Topic 9 (UK politics / government): weight ≈ 0.054  
+5. **Ukraine‑like Article Detector (Decision Tree on topic features) – _fifth notebook_**  
+   - **Data:** Topic‑feature dataset.  
+   - **Methods:** Manually defined label `is_ukraine_like = strongly_dominant & (dominant_topic == 2)`; trained DecisionTreeClassifier with and without `topic_2_prop`, explored class imbalance, `class_weight="balanced"`, and cross‑validation; compared high‑recall vs high‑precision settings.  
+   - **Key findings:** With balanced weights, the tree finds most Ukraine‑like articles (recall ≈ 0.93) but with many false positives; without balancing, it ignores the minority class; we learned how tree depth and class weighting trade recall vs precision on imbalanced data.
 
-The dominant topic by `argmax` is **topic 9**, even though the title clearly mentions “Ukraine war”.  
-When I look at this as a human, the article is actually **about the UK Prime Minister’s diplomatic role in the war**, so it is reasonable to see it as a **mixture** of “Ukraine war” and “UK politics”.
-
-This example taught me that:
-- Topic models do not produce a single “true” label; they produce **mixtures of themes**.  
-- A “misassignment” often reveals an article that genuinely sits between two human categories.  
-- Checking **one article at a time**, with its text and topic weights, is a good way to study the alignment (or tension) between **machine perception** and **human perception** of topics.
-## Shifting attention: Ukraine vs. Gaza (2022–2024)
-
-Using NMF topics on BBC RSS, I focused on two conflict‑related topics:
-
-- **Topic 2 – Russia–Ukraine war**
-- **Topic 6 – Israel–Gaza war**
-
-From the notebook counts:
-
-| Year | Ukraine (topic 2) | Gaza (topic 6) |
-|------|-------------------|----------------|
-| 2022 | 1189              | 121            |
-| 2023 |  686              | 819            |
-| 2024 |  491              | 518            |
-
-This shows a **clear shift**: Ukraine dominates in 2022, Gaza “catches up and overtakes” in 2023, and by 2024 both conflicts are covered but Gaza remains the primary focus.
-
-I then asked Gemini (with web access) to analyze BBC / UK media attention across these years.  
-It summarized densities as:
-
-- **2022:** Ukraine = *Extreme (Primary)*, Gaza = *Low*  
-- **2023:** Ukraine = *High (Steady)*, Gaza = *Extreme (Post‑Oct)*  
-- **2024:** Ukraine = *Moderate (Secondary)*, Gaza = *Extreme (Primary)*  
-
-The qualitative story from Gemini aligns well with the **quantitative topic counts** from my model:  
-Ukraine starts as the central conflict, then gradually becomes secondary as Gaza coverage spikes in 2023 and stays very high in 2024.
-More detailed explanation and Gemini output: [Full notes in Google Docs](https://docs.google.com/document/d/1q0JARoXUdl8eeSeM3yjWUCXOn-aK5Fi2TfxHmPcQt7I/edit?usp=sharing).
-### Special-topic detector (NMF + Decision Tree)
-
-Notebook: `bbc_special_topic_detector_nmf_decisiontree.ipynb`
-
-- Start from the raw **BBC RSS dataset (2022–2024)** and build TF‑IDF features on `title + description`.
-- Fit an **NMF model with 17 components**, then compute topic-level statistics (strong single dominance, use in 2‑ and 3‑topic mixtures, year concentration).
-- Combine these into a `special_score` and **automatically pick the most “special” topic** (no manual label; this turns out to be the Russia–Ukraine war topic).
-- Define an article label `is_special` = True when the article is **strongly dominated** by that auto‑chosen topic.
-- Train a **DecisionTreeClassifier** on the 17 topic‑proportion features to reproduce `is_special`; on a held‑out set it achieves almost perfect accuracy and very high precision/recall for the special class.
-- Wrap the full pipeline into `predict_is_special(text)`, which runs  
-  `raw text → TF‑IDF → NMF topics → topic proportions → decision tree` and returns a True/False prediction plus probability.
+6. **Auto‑Discovered Special Topic Detector (full pipeline from raw text) – _sixth and most refined notebook_**  
+   - **Data:** Raw BBC RSS 2022–2024 (no precomputed features).  
+   - **Methods:**  
+     - Rebuilt TF‑IDF + NMF(17) from scratch.  
+     - Computed topic‑level metrics (strong dominance, pair/triple counts, year concentration) and combined them into a `special_score` to **automatically pick a “special” topic** (topic 2, without naming it).  
+     - Defined `is_special` = strongly dominant and `dominant_topic == special_topic_id`.  
+     - Trained a DecisionTreeClassifier on all 17 topic proportions to approximate `is_special`.  
+     - Wrapped the whole thing into `predict_is_special(text)` that runs text → TF‑IDF → NMF → topic props → tree → True/False.  
+   - **Key findings:** The auto‑scoring reliably selected the Ukraine‑war topic as “special”; the tree almost perfectly reproduces `is_special` on a held‑out set (≈100% accuracy, very high precision/recall), and manual inspection of predicted‑True articles showed only rare false positives.  
+   - **Outputs:** Notebook `bbc_special_topic_detector_nmf_decisiontree.ipynb`, README section describing the end‑to‑end “special topic” detector.
